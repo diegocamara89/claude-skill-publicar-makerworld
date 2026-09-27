@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #1e2024; }
+      :root {
+        --bg: #1e2024; --fg: #f6eee6; --accent: #ff8a3d; --peach: #ffc9a3;
+      }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden;
+        font-family: "Montserrat", sans-serif; color: var(--fg); }
+      /* a peça vai para a direita (a animação 3D é centrada), abrindo a coluna do texto */
+      .palco { position: absolute; inset: 0; transform: translateX(250px) scale(1.26); transform-origin: 50% 50%; }
+      #render3d { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      /* legibilidade: sombra radial no canto de baixo à esquerda, onde entram os títulos */
+      .veu { position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse 1150px 620px at 0% 100%, rgba(22,24,28,0.92) 0%, rgba(22,24,28,0.62) 45%, rgba(22,24,28,0) 75%); }
+      .marca { position: absolute; left: 96px; top: 76px; display: flex; align-items: center; gap: 22px; }
+      .marca img { width: 84px; height: 84px; display: block; }
+      .marca span { font-weight: 800; font-size: 40px; letter-spacing: -0.01em; }
+      .cap { position: absolute; left: 110px; bottom: 120px; width: 760px; }
+      .kicker { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 26px;
+        letter-spacing: 0.14em; color: var(--peach); display: block; }
+      .titulo { font-weight: 900; font-size: 84px; line-height: 1.04; letter-spacing: -0.02em;
+        margin-top: 14px; display: block; }
+      .regua { width: 180px; height: 8px; background: var(--accent); margin-top: 26px; transform-origin: left center; }
+      .sub { font-weight: 600; font-size: 38px; margin-top: 22px; color: var(--fg); display: block; }
+      .chips { display: flex; gap: 18px; margin-top: 26px; }
+      .chip { font-weight: 700; font-size: 32px; padding: 12px 28px; border-radius: 999px;
+        border: 3px solid var(--peach); color: var(--peach); }
+      .chip.cheio { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+      #fim .fundo { position: absolute; inset: 0; background: radial-gradient(ellipse 1100px 700px at 50% 45%, #2a2d33 0%, #1e2024 70%); }
+      #fim .conteudo { position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; }
+      #fim img { width: 220px; height: 220px; display: block; }
+      #fim .nome { font-weight: 900; font-size: 88px; margin-top: 24px; letter-spacing: -0.01em; }
+      #fim .linha1 { font-weight: 700; font-size: 44px; margin-top: 14px; color: var(--peach); }
+      #fim .linha2 { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 40px;
+        margin-top: 34px; color: var(--accent); letter-spacing: 0.06em; }
+      #fim .linha3 { font-weight: 600; font-size: 34px; margin-top: 14px; color: var(--fg); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="17">
+      <div class="palco">
+        <video id="render3d" class="clip" src="assets/render3d.mp4" data-start="0" data-duration="16"
+          data-track-index="0" muted playsinline></video>
+      </div>
+
+      <div id="veu" class="clip veu" data-start="0" data-duration="14.7" data-track-index="1"></div>
+
+      <div id="marca" class="clip marca" data-start="0" data-duration="14.7" data-track-index="2">
+        <img id="marca-logo" src="assets/logo_bytelayer.png" alt="" />
+        <span id="marca-nome">ByteLayer</span>
+      </div>
+
+      <section id="c1" class="clip cap" data-start="0.3" data-duration="3.7" data-track-index="3">
+        <div class="in"><span class="kicker">01 · MONTAGEM</span>
+          <span class="titulo">Passador de cabo</span>
+          <span class="titulo" style="color: var(--accent); margin-top: 0">com rosca</span>
+          <div class="regua"></div>
+          <span class="sub">4 peças · imprime sem suporte</span></div>
+      </section>
+
+      <section id="c2" class="clip cap" data-start="4.2" data-duration="3.2" data-track-index="3">
+        <div class="in"><span class="kicker">02 · FIXAÇÃO</span>
+          <span class="titulo">Prende com porca por baixo</span>
+          <div class="chips"><span class="chip cheio">vidro até 12 mm</span><span class="chip">madeira até 30 mm</span></div>
+          <span class="sub">Sem cola, sem ferramenta</span></div>
+      </section>
+
+      <section id="c3" class="clip cap" data-start="7.5" data-duration="1.9" data-track-index="3">
+        <div class="in"><span class="kicker">03 · DISCO</span>
+          <span class="titulo">Travado por 3 nervuras</span></div>
+      </section>
+
+      <section id="c4" class="clip cap" data-start="9.5" data-duration="1.8" data-track-index="3">
+        <div class="in"><span class="kicker">04 · TAMPA</span>
+          <span class="titulo">Encaixa num pino liso</span></div>
+      </section>
+
+      <section id="c5" class="clip cap" data-start="11.4" data-duration="3.2" data-track-index="3">
+        <div class="in"><span class="kicker">05 · USO</span>
+          <span class="titulo">Gire para abrir e fechar</span>
+          <div class="regua"></div></div>
+      </section>
+
+      <section id="fim" class="clip" data-start="14.7" data-duration="2.3" data-track-index="4"
+        style="position: absolute; inset: 0">
+        <div class="fundo"></div>
+        <div class="conteudo">
+          <img id="fim-logo" src="assets/logo_bytelayer_fim.png" alt="" />
+          <div class="nome">ByteLayer</div>
+          <div class="linha1">Passador de cabo com rosca</div>
+          <div class="linha2">35 · 40 · 50 · 60 mm</div>
+          <div class="linha3">Vidro e Madeira · Imprime sem suporte</div>
+        </div>
+      </section>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      // marca: entra e respira de leve
+      tl.fromTo("#marca-logo", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.6)" }, 0.1);
+      tl.fromTo("#marca-nome", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.25);
+      tl.to("#marca-logo", { rotation: 6, duration: 7, ease: "sine.inOut", yoyo: true, repeat: 1 }, 0.8);
+
+      // cada título: kicker, título, régua e complementos com eases diferentes; saída por opacidade
+      function titulo(id, t0, dur) {
+        const q = (s) => `#${id} ${s}`;
+        const tem = (s) => document.querySelector(q(s)) !== null;
+        tl.fromTo(q(".kicker"), { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power2.out" }, t0);
+        tl.fromTo(q(".titulo"), { y: 46, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power4.out", stagger: 0.08 }, t0 + 0.1);
+        if (tem(".regua")) tl.fromTo(q(".regua"), { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "expo.out" }, t0 + 0.35);
+        if (tem(".chip")) tl.fromTo(q(".chip"), { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.8)", stagger: 0.1 }, t0 + 0.4);
+        if (tem(".sub")) tl.fromTo(q(".sub"), { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "sine.out" }, t0 + 0.5);
+        tl.to(q(".in"), { opacity: 0, x: -30, duration: 0.35, ease: "power2.in" }, t0 + dur - 0.4);
+      }
+      titulo("c1", 0.3, 3.7);
+      titulo("c2", 4.2, 3.2);
+      titulo("c3", 7.5, 1.9);
+      titulo("c4", 9.5, 1.8);
+      titulo("c5", 11.4, 3.2);
+
+      // cartela final
+      tl.fromTo("#fim .fundo", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "sine.inOut" }, 14.7);
+      tl.fromTo("#fim-logo", { scale: 0.5, opacity: 0, rotation: -20 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.7, ease: "back.out(1.7)" }, 15.0);
+      tl.fromTo("#fim .nome", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 15.25);
+      tl.fromTo("#fim .linha1", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "sine.out" }, 15.45);
+      tl.fromTo("#fim .linha2", { scale: 1.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out" }, 15.6);
+      tl.fromTo("#fim .linha3", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power2.out" }, 15.8);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
