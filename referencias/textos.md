@@ -84,10 +84,11 @@ em volta dos cabos.
 
 (Texto integral PT+EN em `Passador de cabo 40mm\PUBLICACAO_MakerWorld\DESCRICAO_MakerWorld.md`.)
 
-## Tags (≤ 100 caracteres)
+## Tags (até 50 entradas de até 100 caracteres)
 
 Receita: termos em inglês que a pessoa digitaria na busca + 1–2 em português. Contar com
-`len("...")` antes de entregar.
+`len(tag)` por entrada e a quantidade de entradas antes de entregar; não limitar o conjunto
+todo a 100 caracteres. Conferir os limites atuais em `campos.md`.
 
 Exemplo (99 caracteres):
 `cable grommet,desk grommet,cable management,cable hole cover,glass desk,wood desk,passa fio,grommet`

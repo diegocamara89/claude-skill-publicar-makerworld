@@ -1,10 +1,15 @@
 # Mídia — receitas
 
-Scripts-exemplo em `../scripts/` vieram do passador de cabo: as constantes do topo (nomes de
+Scripts-exemplo de mídia em `../scripts/` vieram do passador de cabo: as constantes do topo (nomes de
 arquivo, coordenadas, textos) são daquele projeto e precisam ser trocadas. Copiar para
 `<projeto>/midia/` antes de usar; não rodar dentro da pasta da skill.
 
 ## Roteiro de fotos para pedir ao dono (no início)
+
+Antes de pedir, localizar e inspecionar as imagens já fornecidas. O roteiro abaixo veio do
+passador de cabo: adaptar as vistas à função do produto. Para o formulário atual, reservar
+ao menos três fotos reais distintas cobrindo três vistas e uma foto real do resultado do
+perfil. Uma foto pode ser reaproveitada no perfil; não duplicar dentro do mesmo campo.
 
 Celular, luz de janela, sem flash:
 1. Peça instalada, tampa fechada (de cima, ~45°).
@@ -38,6 +43,13 @@ Armadilhas de render resolvidas:
 1. Animação de montagem no Blender: `cena_marketing.py` modo `"video"` (EEVEE, 480 quadros
    a 30 fps). Peças entram uma por vez; a câmera passa por baixo do tampo quando a peça de
    baixo trabalha (de cima o vidro reflete e esconde).
+   - Preferência do dono: movimento real das peças, organização, encaixe e uso. Zoom sobre
+     renders estáticos não atende a esse pedido.
+   - Derivar a orientação de uso separadamente da impressão. Conferir apoio, sentido de
+     inserção, ordem de montagem e retirada antes de renderizar o lote. No suporte de
+     garrafinha, a garra desce sobre o parafuso fixo, com batente acima da cabeça; a montagem
+     invertida deixou a garra escapar para baixo. Validar o mecanismo, além de colisões.
+   - Flexão ilustrada não comprova resistência ou simula a deformação real do material.
 2. Quadros → MP4:
    `ffmpeg -y -framerate 30 -i q_%04d.png -c:v libx264 -crf 17 -preset slow -pix_fmt yuv420p -movflags +faststart render3d.mp4`
 3. Legendas e cartela final com HyperFrames (skills `hyperframes` / `general-video`):
@@ -58,8 +70,14 @@ Armadilhas de render resolvidas:
 Faz: poeira fora da peça (top-hat + inpaint, nunca dentro do círculo da peça), tom (CLAHE leve,
 sombras abertas, tira azulado), foco (escurece o fundo fora da peça), nitidez leve, saída
 1600×1200. **A peça não é retocada.**
+Tratamento é opcional. No piloto do suporte, fotos originais de 1200×1600 instaladas foram
+enviadas e persistiram sem recorte; preservavam informações úteis sobre grade e fixação.
 
-## Model Pictures (fundo liso)
+## Model Pictures (fundo liso opcional)
+
+Usar fotos reais adicionais. Não exigir recorte ou fotos novas se o fundo existente permitir
+ver a peça e explicar seu uso; proporção 4:3 e fundo simples são recomendações. As receitas
+abaixo servem quando limpar o fundo de fato melhora a apresentação.
 
 1. Recorte:
    - fundo claro e liso na foto → GrabCut (`recorta()` em `scripts/fundo_limpo.py`);
