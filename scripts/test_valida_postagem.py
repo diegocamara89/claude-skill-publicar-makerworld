@@ -6,7 +6,7 @@ import tempfile
 import unittest
 import zipfile
 
-from valida_postagem import CAMPOS, GRUPOS, conferir, sha256, validar
+from valida_postagem import CAMPOS, GRUPOS, conferir, conferir_html, sha256, validar
 
 
 class ValidaPostagemTest(unittest.TestCase):
@@ -143,6 +143,108 @@ class ValidaPostagemTest(unittest.TestCase):
         self.pacote["pendencias"] = ["Foto final pendente"]
         self.salvar()
         self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+
+    def test_html_observado_com_referencia_revisada(self):
+        html = '<p>Texto <strong>completo</strong>.</p><table><tr><td>15</td><td>30</td></tr></table>'
+        (self.raiz / "descricao.html").write_text(html, encoding="utf-8")
+        self.pacote["editores"] = {"descricao": self.entrada("descricao.html", "texto")}
+        captura = self.captura()
+        del captura["campos"]["descricao"]
+        captura["campos"]["descricao_html"] = html
+        self.assertTrue(self.conferir_captura(captura)["conferencia_ok"])
+        captura["campos"]["descricao_html"] = html.replace("15", "50")
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+
+    def test_html_observado_sem_referencia_nao_simula_markdown(self):
+        captura = self.captura()
+        captura["campos"]["descricao_html"] = "<p>Um HTML sem revisão</p>"
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+
+    def test_html_revisado_alterado(self):
+        (self.raiz / "descricao.html").write_text("<p>Revisado</p>", encoding="utf-8")
+        self.pacote["editores"] = {"descricao": self.entrada("descricao.html", "texto")}
+        self.salvar()
+        (self.raiz / "descricao.html").write_text("<p>Alterado</p>", encoding="utf-8")
+        self.assertFalse(validar(self.json)["integridade_ok"])
+
+    def test_representacao_real_do_formulario(self):
+        self.pacote["campos"].update(licenca="CC BY-NC 4.0", tags="petg, cage")
+        self.pacote["formulario"] = {"categoria": "Nome observado"}
+        captura = self.captura()
+        captura["campos"].update(licenca="BY-NC", tags=["PETG", "cage"], categoria="Nome observado")
+        self.assertTrue(self.conferir_captura(captura)["conferencia_ok"])
+
+    def test_identidades_cdn_exigem_comprovante_e_ordem(self):
+        captura = self.captura()
+        entradas = self.pacote["midia"]["galeria"]
+        ids = [f"https://cdn.example.test/{i}.png" for i in range(len(entradas))]
+        captura["anexos"]["galeria"] = [{"identidade": x} for x in ids]
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+        captura["envios"] = {"galeria": [dict(arquivo=Path(e["arquivo"]).name, sha256=e["sha256"], identidade=x)
+                                        for e, x in zip(entradas, ids)]}
+        self.assertTrue(self.conferir_captura(captura)["conferencia_ok"])
+        captura["anexos"]["galeria"].reverse()
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+
+    def test_perfil_com_zero_placas(self):
+        self.pacote["perfil"] = {"placas": 8, "arquivo": "kit.3mf"}
+        captura = self.captura()
+        captura["perfil"] = {"placas": 0, "arquivos": ["kit.3mf"]}
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+        captura["perfil"]["placas"] = 8
+        self.assertTrue(self.conferir_captura(captura)["conferencia_ok"])
+        captura["perfil"]["arquivos"] = ["outro.3mf"]
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+
+    def test_3mf_do_perfil_separado_dos_model_files(self):
+        self.pacote["midia"]["perfil_arquivo"] = self.pacote["midia"]["modelos"]
+        self.pacote["midia"]["modelos"] = []
+        self.pacote["perfil"] = {"placas": 1, "arquivo": "kit.3mf"}
+        self.salvar()
+        self.assertTrue(validar(self.json)["apto_publicar"])
+        # O limite de 30 MB é de mídia; não deve ser aplicado ao arquivo de impressão.
+        with zipfile.ZipFile(self.raiz / "kit.3mf", "a") as z:
+            z.writestr("payload", b"x" * (31 * 1024 * 1024))
+        self.pacote["midia"]["perfil_arquivo"] = [self.entrada("kit.3mf", "3mf")]
+        self.salvar()
+        self.assertTrue(validar(self.json)["apto_publicar"])
+
+    def test_id_de_rascunho_e_id_de_publicacao(self):
+        self.pacote["rascunho"] = {"id": "123"}
+        captura = self.captura()
+        self.assertFalse(self.conferir_captura(captura)["conferencia_ok"])
+        captura["id"] = "123"
+        self.assertTrue(self.conferir_captura(captura)["conferencia_ok"])
+        captura.update(estado="publicado", id="456", url="https://makerworld.com/pt/models/456")
+        self.assertTrue(self.conferir_captura(captura)["conferencia_ok"])
+
+
+class HtmlEditorTest(unittest.TestCase):
+    def test_wrappers_editor_espacos_e_divisor(self):
+        esperado = '<p>A <b>garra</b>, firme.</p><hr><table><tr><td>0,15</td></tr></table>'
+        observado = '<p data-placeholder=".">A <strong>garra</strong> , firme.</p><figure class="table"><div class="ck-widget__selection-handle"><svg><text>controle</text></svg></div><table><tbody><tr><td><span class="ck-table-bogus-paragraph">0,15</span><div class="ck-table-column-resizer"></div></td></tr></tbody></table></figure>'
+        self.assertTrue(conferir_html(esperado, observado))
+
+    def test_perda_de_texto_celula_enfase_link_e_ordem(self):
+        esperado = '<p>Garra <strong>firme</strong>, PETG.</p><ul><li>Montar</li><li>Conferir</li></ul><table><tr><td>15</td><td>30</td></tr></table><p><a href="https://example.test/licenca">Crédito</a></p>'
+        alteracoes = [
+            esperado.replace(", PETG", ""),
+            esperado.replace('<td>15</td><td>30</td>', '<td>30</td><td>15</td>'),
+            esperado.replace('Garra <strong>firme</strong>', '<strong>Garra</strong> firme'),
+            esperado.replace('Montar</li><li>Conferir', 'Conferir</li><li>Montar'),
+            esperado.replace('/licenca', '/outra'),
+            esperado.replace('<table>', '<table><tr><td>Extra</td></tr>'),
+        ]
+        for html in alteracoes:
+            with self.subTest(html=html):
+                self.assertFalse(conferir_html(esperado, html))
+
+    def test_limite_entre_palavras_preservado(self):
+        self.assertFalse(conferir_html('<p>uma<strong>garra</strong></p>', '<p>uma <strong>garra</strong></p>'))
+
+    def test_html_incompleto_recusado(self):
+        with self.assertRaises(ValueError):
+            conferir_html('<p>Completo</p>', '<table><tr><td>Incompleto')
 
 
 if __name__ == "__main__":

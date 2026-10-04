@@ -30,8 +30,10 @@ Paleta: carvão `#1e2024`, laranja `#ff8a3d`, pêssego `#ffc9a3`, creme `#f6eee6
    receitas em `referencias/midia.md`, scripts-exemplo em `scripts/`.
 5. **Conferência final** (checklist abaixo) e entrega com um guia campo a campo.
 6. **Envio automatizado, quando solicitado** → `referencias/automacao.md`. Criar uma entrada
-   `POSTAGEM.json` com campos e anexos revisados; validar localmente antes do envio. A primeira
-   rodada confere um rascunho salvo e reaberto. As próximas mantêm a conferência do resultado.
+   `POSTAGEM.json` com campos, anexos, HTML revisado e placas esperadas; validar localmente.
+   Reutilizar `rascunho_makerworld.mjs` para lotes, retomada e modelo/perfil salvos e reabertos;
+   `valida_postagem.py conferir` verifica a captura real. Mapear controles na primeira rodada
+   e manter a conferência nas próximas. Não criar outro uploader ou duplicar rascunho na retomada.
 
 Rodar trabalho pesado (fatiar, renderizar) **um de cada vez**, com retorno curto a cada passo.
 
