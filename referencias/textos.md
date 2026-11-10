@@ -9,8 +9,7 @@ N rodadas de impressão" quando for verdade.
 
 Modelo: `<O que é> com <diferencial> — <versões>, <tamanhos>`
 Exemplo:
-- PT: Passador de Cabo com Rosca que Prende de Verdade — Vidro e Madeira, 35 a 60 mm
-- EN: The Cable Grommet That Actually Stays Put — Threaded, Glass & Wood, 35–60 mm
+- Passador de Cabo com Rosca que Prende de Verdade — Vidro e Madeira, 35 a 60 mm
 
 ## Resumo (1 linha)
 
@@ -18,7 +17,11 @@ Modelo: `<ação principal> e <resultado>. Serve em <onde>, tem <recurso> e impr
 Exemplo: Rosqueia por baixo da mesa e não sai mais. Serve em vidro e madeira, tem tampa
 giratória e imprime sem suporte.
 
-## Descrição (estrutura fixa, PT e depois EN)
+## Descrição (estrutura fixa, só em português)
+
+Decisão do dono (06/10/2026): textos **só em português**. O MakerWorld traduz título,
+resumo e descrição automaticamente; versão EN duplicada é retrabalho e polui a página.
+Tags continuam com termos de busca em inglês (são busca, não texto).
 
 ```markdown
 **<Pergunta com as 2–3 dores que o modelo resolve>?** <Frase: como ele resolve>. <Frase: recurso visível>.
@@ -57,8 +60,7 @@ giratória e imprime sem suporte.
 Design: ByteLayer (@ByteLayer)
 ```
 
-A versão EN repete a estrutura. Traduzir os nomes de arquivo na tabela
-(`("vidro" = glass, "madeira" = wood.)`) quando os arquivos tiverem nome em português.
+Não escrever versão EN (nem da descrição, nem do perfil).
 
 ### Exemplo completo (PT)
 
@@ -82,7 +84,7 @@ em volta dos cabos.
 | 50 mm | 50mm_vidro | 50mm_madeira | ~14 mm |
 | 60 mm | 60mm_vidro | 60mm_madeira | ~19 mm |
 
-(Texto integral PT+EN em `Passador de cabo 40mm\PUBLICACAO_MakerWorld\DESCRICAO_MakerWorld.md`.)
+(Texto integral em `Passador de cabo 40mm\PUBLICACAO_MakerWorld\DESCRICAO_MakerWorld.md`.)
 
 ## Tags (até 50 entradas de até 100 caracteres)
 

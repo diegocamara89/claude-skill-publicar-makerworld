@@ -48,7 +48,7 @@ Criar na pasta do pacote, sem credenciais ou caminhos absolutos. Usar estas chav
 - `versao_schema`: `1`; `conta`: conta de destino, por exemplo `ByteLayer`.
 - `campos`: textos revisados `titulo`, `resumo`, `descricao`, `tags` (texto separado por
   vírgulas), `categoria` (nome/caminho escolhido), `licenca` (nome confirmado),
-  `perfil_titulo`, `perfil_descricao`. Preservar PT+EN e o conteúdo completo.
+  `perfil_titulo`, `perfil_descricao`. Texto só em português; preservar o conteúdo completo.
 - `midia`: listas `modelos`, `capa`, `capa_app`, `galeria`, `video`, `model_pictures`,
   `perfil_fotos`, na ordem pretendida. Capa e capa_app têm uma entrada cada. Nas novas
   entradas, separar o 3MF de impressão em `perfil_arquivo` (uma entrada) dos Model Files
@@ -71,6 +71,11 @@ Criar na pasta do pacote, sem credenciais ou caminhos absolutos. Usar estas chav
   caso difira de `campos.categoria`. Não inventar tradução ou selecionar pela posição.
 
 `foto_real` é uma classificação após inspeção da imagem, não uma conclusão do validador.
+Para a rota observada “Tenho arquivos STL/CAD ou outros tipos de arquivos 3MF”, o modelo
+pode publicar arquivos para download sem perfil de impressão direta. Declarar `sem_perfil: true`,
+com `perfil`, `midia.perfil_fotos` e `midia.perfil_arquivo` vazios; conferir na UI que não há
+etapa de perfil. O validador dispensa somente os campos/anexos desse perfil. Não marcar a
+declaração de impressão do perfil usando fotos de uma versão anterior aos ajustes.
 Ele não reconhece fotos pelo nome ou pela extensão e não prova qualidade de impressão.
 O caso do suporte usa também o teste da guia final como pendência específica; não transformar
 esse teste em regra obrigatória para todo produto.
@@ -218,6 +223,78 @@ Se a plataforma encaminhar para **Verificando**, registrar **enviado_em_verifica
 consultar a lista de modelos publicados para obter a URL quando existir. Não reenviar nem
 revogar para tentar acelerar a moderação. Um botão clicado, um rascunho que sumiu ou a
 contagem de perfis enviados não comprovam publicação pública.
+
+## Rota principal: Claude in Chrome
+
+Decisão do dono (11/10/2026): **o Claude posta ele mesmo por esta rota e não delega ao Codex**.
+O Codex fica sem navegador conectado (`cua_repl` com `browsers: []`) e todas as tentativas
+falharam. O `rascunho_makerworld.mjs` acima fica como referência de seletores e de conferência,
+não como caminho de envio. Usada com sucesso em 06/10/2026 (travas de gaiola) e em 11/10/2026
+(suporte Arzopa, rascunho 9987571 enviado à verificação).
+
+- Imagens, 3MF e STL: `file_upload` da extensão no `input[type=file]` funciona (capas abrem
+  diálogo de recorte: clicar Submit).
+- **Vídeo não entra só com `file_upload`.** Causa medida: a aba do grupo da extensão fica
+  `document.visibilityState === "hidden"`, e o Chrome não carrega metadados de vídeo em aba
+  oculta; a validação do site espera a duração e descarta o arquivo em silêncio (nenhuma
+  chamada de rede). Receita que funcionou (v2 3404362 e v1 3404388): (1) `file_upload` no input
+  de vídeo para obter o `File`; (2) via JS, guardar `input.files[0]`, sobrescrever
+  `HTMLInputElement.prototype.click` para, no input de vídeo, colocar esse arquivo em `files` e
+  disparar `change`; (3) sobrescrever o setter de `HTMLMediaElement.prototype.src` para, em
+  `blob:`, expor a duração e as dimensões REAIS do arquivo (medidas com ffprobe) e disparar
+  `loadedmetadata`; (4) clicar no cartão "Add video". Conferir `POST .../my/upload` + `PUT` no
+  S3 e a prévia do vídeo antes de salvar.
+- Campo de tags: Enter não limpa o texto (as tags se acumulam numa só). Digitar, esperar a
+  lista e clicar a primeira sugestão; sem sugestão, Enter cria a tag personalizada.
+- Nome do perfil vem preenchido em inglês: definir pelo setter nativo do input + `input`/`change`.
+- Descrições: `document.querySelector('.ck-editor__editable').ckeditorInstance.setData(html)`
+  preserva tabelas e links.
+- Remix (11/10/2026, suporte Arzopa): Upload → "3D remix model" → "Yes (3mf)"; o campo **Model Origin**
+  aceita a URL colada e pede clicar a sugestão; com origem BY-NC-SA, o site só habilita a licença SA.
+  Categoria: digitar "Office" e clicar Household > Office (id 404).
+- **Tags:** colar `scripts/tags_lote.js` e chamar `await enviaTags("<tags do pacote>", 0)`, depois 10, 20…
+  (blocos de 10: o CDP corta a chamada em 45 s; ~2 s por tag). Ele tira os acentos, porque o site corta
+  letras acentuadas ("portátil" → "porttil"), e devolve o contador `Tags (N / 50)` lido da tela.
+  - **Uma chamada por vez, nunca em paralelo** (12/10/2026, plataforma de carretéis): com a aba oculta há
+    mais de ~5 min, o Chrome passa a segurar os `setTimeout` da página; a chamada estoura os 45 s, mas o
+    laço continua rodando na página, e duas chamadas se misturaram no mesmo campo (faltaram 4 tags e
+    entrou uma "PET" a mais). Se uma chamada estourar, esperar o campo parar de mudar antes de qualquer
+    outra; para completar poucas tags, digitar pelo `computer` (type → clicar a sugestão; sem sugestão, Enter).
+  - Depois, ler `.tagItem-content` e comparar o conjunto com o pacote (sem caixa: o site grava a caixa
+    da sugestão, ex. "Recycle", "BAMBU LAB"). Tag a mais sai pelo X do chip (`img.tagItem-deleteIcon`).
+  - O placeholder do campo veio vazio (o texto virou rótulo): `campoTags()` agora acha o input pelo rótulo
+    `Tags (N / 50)`.
+- `file_upload` da extensão tem limite de **10 MB por chamada**: rodar `scripts/fotos_leves.py` antes
+  (8 MB → 0,4 MB, 2000 px, sem EXIF/GPS) e enviar em lote. O MakerWorld reprocessa e tira o GPS
+  (conferido em 11/10/2026), mas o arquivo leve já sai sem ele.
+- **3MF acima de 10 MB** (12/10/2026: 13–14 MB, a maior parte era G-code embutido): regravar o ZIP sem
+  `Metadata/plate_N.gcode` e `.gcode.md5`, mantendo `slice_info.config` com os `<plate>` (deflate nível 9).
+  O site reconheceu as 4 placas. Antes de subir, refatiar o 3MF enxuto no CLI e conferir placas, gramas e
+  zero suporte iguais aos do original; guardar o original com G-code numa subpasta.
+- **Fotos por campo** (12/10/2026): "Real life photos" só recebe foto real; "Model Pictures", outra foto
+  real que não está na galeria; imagens explicativas e renders vão em Print Profile Pictures, depois da
+  foto real (a capa copiada automaticamente para o perfil sai pelo X + Delete).
+- **Comprovante das capas:** o CDN troca o nome da capa. Logo após cada upload de capa, ler a rede
+  (`read_network_requests`, filtro `s3`): o nome do `PUT` (ex. `85451cae1da5cd02.png`) é a identidade
+  que aparece no rascunho. Registrar `{arquivo, sha256, identidade}` em `envios.capa`/`envios.capa_app`.
+  Sem esse registro, `captura_rascunho.js` traz `dimensoes_capas` (1600×1200 = 4:3; 3:4 = app) como prova.
+- Perfil: o nome em inglês só muda pelo setter nativo; a capa renderizada é copiada para as fotos do
+  perfil (remover no X + Delete). A caixa "I've read Print Profile Guidelines" pode não marcar pelo ref:
+  clicar na coordenada e conferir por zoom antes de Publicar.
+- **Conferência antes de Publicar (obrigatória):**
+  1. Salvar, abrir `.../my/models/drafts/<id>/edit` (a categoria vem do combobox da tela).
+  2. Colar `scripts/captura_rascunho.js` + `await guardaCaptura(await capturaRascunho({placas: 1}))`:
+     devolve o tamanho e o hash curto de cada pedaço de 900 caracteres. Só lê a API do próprio rascunho.
+  3. Trazer cada pedaço com `pedacoCaptura(i)` (a extensão corta respostas longas e bloqueia texto com
+     cara de query string; os `= & ? ; %` saem como \uXXXX) e gravar todos, em ordem, num .txt.
+  4. `python scripts/monta_captura.py pedacos.txt captura.json <hashes...> --envios envios.json`: para se
+     algum pedaço divergir. A ferramenta Write desfaz os \uXXXX; o script aceita as duas formas.
+  5. `valida_postagem.py conferir POSTAGEM.json --captura captura.json` tem de dar `conferencia_ok: true`.
+     No POSTAGEM, `rascunho.id` e `formulario.categoria` = rótulo da tela (ex. "Office").
+  Teste real (11/10/2026, rascunho 9987571): pegou as 2 tags que o site gravou sem acento e fora de
+  ordem; depois de alinhar o pacote ao que foi gravado, `conferencia_ok: true`.
+- Editar modelo publicado: menu ⋮ → Edit → Edit; ao publicar, responder "No" para geometria
+  alterada quando só mídia mudou. A edição volta para "Verifying".
 
 ## Próximas postagens
 

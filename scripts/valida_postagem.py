@@ -16,7 +16,7 @@ CAMPOS = ("titulo", "resumo", "descricao", "tags", "categoria", "licenca",
           "perfil_titulo", "perfil_descricao")
 GRUPOS = ("modelos", "capa", "capa_app", "galeria", "video",
           "model_pictures", "perfil_fotos", "perfil_arquivo")
-TIPOS = {"3mf", "stl", "foto_real", "render", "animacao", "texto"}
+TIPOS = {"3mf", "stl", "scad", "foto_real", "render", "animacao", "texto"}
 LICENCAS = {"CC BY-NC 4.0": "BY-NC", "CC BY-NC-SA 4.0": "BY-NC-SA"}
 
 
@@ -121,7 +121,10 @@ def validar(arquivo_json):
     campos = pacote.get("campos", {})
     if not isinstance(campos, dict):
         campos = {}
+    sem_perfil = pacote.get("sem_perfil") is True
     for nome in CAMPOS:
+        if sem_perfil and nome.startswith("perfil_"):
+            continue
         valor = campos.get(nome)
         if not isinstance(valor, str) or not valor.strip():
             erros.append(f"Campo ausente ou inválido: {nome}.")
@@ -137,6 +140,8 @@ def validar(arquivo_json):
     midia = pacote.get("midia", {})
     if not isinstance(midia, dict):
         midia = {}
+    if sem_perfil and (pacote.get("perfil") or midia.get("perfil_fotos") or midia.get("perfil_arquivo")):
+        erros.append("sem_perfil exige perfil e anexos de perfil vazios.")
     fotos_modelo, fotos_galeria = set(), set()
     tem_3mf = False
     for grupo in (*GRUPOS, "fontes"):
@@ -166,8 +171,8 @@ def validar(arquivo_json):
                 if grupo not in ("modelos", "perfil_arquivo", "fontes") and caminho.stat().st_size > 30 * 1024 * 1024:
                     raise ValueError("Mídia excede os 30 MB registrados na skill.")
                 if grupo in ("modelos", "perfil_arquivo"):
-                    if entrada["tipo"] not in ("3mf", "stl") or caminho.suffix.lower() != "." + entrada["tipo"]:
-                        raise ValueError("Modelo deve ser 3MF ou STL, com extensão correspondente.")
+                    if entrada["tipo"] not in ("3mf", "stl", "scad") or caminho.suffix.lower() != "." + entrada["tipo"]:
+                        raise ValueError("Modelo deve ser 3MF, STL ou SCAD, com extensão correspondente.")
                     if grupo == "perfil_arquivo" and entrada["tipo"] != "3mf":
                         raise ValueError("Perfil de impressão exige 3MF.")
                     if entrada["tipo"] == "3mf":
@@ -196,6 +201,8 @@ def validar(arquivo_json):
     if fotos_modelo & fotos_galeria:
         erros.append("Model Pictures repete uma foto da galeria.")
     for grupo in ("galeria", "model_pictures", "perfil_fotos"):
+        if sem_perfil and grupo == "perfil_fotos":
+            continue
         entradas = midia.get(grupo, [])
         if not isinstance(entradas, list) or not any(isinstance(x, dict) and x.get("tipo") == "foto_real" for x in entradas):
             pendencias.append(f"{grupo}: falta foto real declarada e revisada.")
@@ -263,9 +270,13 @@ def conferir(arquivo_json, captura_json):
         erros.append("Faltam URL MakerWorld e identificador observado na página salva.")
     if captura.get("conta") != pacote.get("conta"):
         erros.append("Conta observada difere da conta de destino.")
+    if pacote.get("sem_perfil") is True and captura.get("perfil"):
+        erros.append("A captura inclui um perfil para postagem declarada sem_perfil.")
     if estado == "rascunho_salvo" and pacote.get("rascunho", {}).get("id") and str(captura.get("id")) != str(pacote["rascunho"]["id"]):
         erros.append("A captura pertence a outro rascunho.")
     for nome in CAMPOS:
+        if pacote.get("sem_perfil") is True and nome.startswith("perfil_"):
+            continue
         esperado = pacote.get("campos", {}).get(nome)
         observado = captura.get("campos", {}).get(nome)
         entrada_html = pacote.get("editores", {}).get(nome)

@@ -17,8 +17,13 @@ mostrar outro limite, o formulário vence: anotar a mudança aqui.
   `flatten-profile.mjs` (skill `bambu-a1`). Nunca o perfil calibrado do dono: o de outra pessoa
   não existe na máquina de quem baixa.
 - Malha com vértices soldados (`merge_vertices`); sopa de triângulos faz o Studio fechar furos.
-- Script-exemplo que monta tudo isso: `scripts/monta_publicacao.py`
-  (`--publicacao <destino> <filamento_sistema.json>` gera o TODOS + um por kit).
+- **Montador genérico:** `scripts/monta_3mf.py` (qualquer conjunto de peças já orientadas, 1 placa;
+  `--processo` troca para outro perfil de sistema achatado, ex. 0,28 Extra Draft; `--exportar` fatia,
+  grava o 3MF completo e lê tempo, gramas e trechos de suporte do G-code). Testado em 11/10/2026 com o
+  par do suporte Arzopa (0,28: 2h44, 67,4 g, 0 suporte). `monta_publicacao.py` ficou como exemplo de
+  várias placas por kit (passador).
+- **Mais de um perfil** (ex. 0,20 principal + 0,28 rápido): um 3MF por perfil. No fluxo de 11/10/2026
+  o formulário levou só o 1º perfil antes de publicar; o 2º entra depois, pela página do modelo.
 - **Conferir cada arquivo, um por vez:**
   `bambu-studio.exe --slice 0 --outputdir <dir> <arquivo>.3mf` → `result.json`
   (`sliced_plates`), `plate_N.gcode`: objetos por placa, suporte ausente, tempo, gramas,
@@ -52,7 +57,7 @@ https://github.com/bambulab/BambuStudio/blob/master/src/BambuStudio.cpp .
   **50 caracteres**, observado no formulário em 03/10/2026. Recompor o título se necessário;
   não cortar automaticamente.
 - Resumo: 1 frase. A plataforma traduz título, resumo, descrição e comentários
-  automaticamente; escrever em português é aceitável, com versão EN na descrição.
+  automaticamente; escrever só em português (decisão do dono, 06/10/2026); não incluir versão EN.
   Na etapa de informações do piloto não havia campo separado: usar a frase como primeiro
   parágrafo da descrição, registrando essa adaptação.
 
@@ -104,8 +109,10 @@ chapa, brim, suporte, orientação, tabela tempo/gramas por placa e dicas de mon
   (`8/50` no conjunto e `0/100` no input). O limite anterior de 100 no total foi corrigido.
   A busca casa as palavras digitadas; a página
   em português mostra as tags traduzidas, mas quem busca em inglês acha pelas tags em inglês.
-- Receita: 5–7 termos em inglês que a pessoa digitaria + 1–2 em português ("passa fio").
-  Sem sinônimos inventados, sem marca de terceiros.
+- Receita: termos em inglês que a pessoa digitaria + termos em português **sem acento** (o site corta
+  letras acentuadas: "portátil" → "porttil"). Sem sinônimos inventados. A marca do aparelho compatível
+  entra (ex. "arzopa", e até a grafia errada comum, "azorpa"): é a busca mais provável (pedido do dono,
+  11/10/2026).
 
 ## Categoria
 
@@ -129,6 +136,12 @@ conferir o nome efetivo no formulário; não supor a licença somente pelas resp
 
 Comercial: "No" por padrão (vender a peça impressa exige permissão). Se o modelo é
 inspirado em outro, a licença própria só vale se a geometria foi refeita do zero.
+
+**Remix herda a licença.** Se algum elo da cadeia é **BY-NC-SA**, o remix sai **CC BY-NC-SA 4.0**
+(opção "Yes, as long as others share in the same way"), mesmo que o original seja CC0. Ao ligar a
+origem (Model Origin), o site avisa do conflito e só habilita a opção SA. Ler a licença na página de
+cada elo, não no 3MF baixado. Caso real: suporte Arzopa (CC0 de affux269 → BY-NC-SA de asktheeightball
+→ ByteLayer BY-NC-SA, 11/10/2026).
 
 Referência: https://creativecommons.org/licenses/by-nc/4.0/ . CC BY-NC permite copiar,
 redistribuir e adaptar para fins não comerciais, com crédito, link da licença e indicação

@@ -1,6 +1,6 @@
 # Mídia — receitas
 
-Scripts-exemplo de mídia em `../scripts/` vieram do passador de cabo: as constantes do topo (nomes de
+Scripts-exemplo de mídia em `../scripts/` vieram do passador de cabo, exceto `desfoca_fundo_nome.py`: as constantes do topo (nomes de
 arquivo, coordenadas, textos) são daquele projeto e precisam ser trocadas. Copiar para
 `<projeto>/midia/` antes de usar; não rodar dentro da pasta da skill.
 
@@ -64,14 +64,82 @@ Armadilhas de render resolvidas:
    `ffmpeg -i video.mp4 -vf "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160:stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a" -loop 0 video.gif`
    (passou de 30 MB → baixar fps para 10 ou largura para 720).
 
+## Fotos leves para o envio
+
+`scripts/fotos_leves.py <saida> <fotos...>`: gira pelo EXIF, reduz o maior lado a 2000 px (JPEG 88) e
+grava sem metadados. Foto de celular de 8 MB vira ~0,4 MB, e a extensão do Chrome (10 MB por chamada)
+manda o lote de uma vez. As fotos do celular do dono trazem **GPS** no EXIF; o MakerWorld tira ao
+reprocessar (conferido em 11/10/2026), mas o arquivo leve já sai limpo.
+
+## Vídeo de remix: só o que mudou, em laranja
+
+Para remix, o vídeo mostra as peças lado a lado e pinta de laranja as faces novas (cortes, chanfros,
+rampas, base reta). Testado no suporte Arzopa (11/10/2026, 19 s, 1080p, aprovado pelo dono).
+1. `scripts/destaca_mudancas.py original.stl novo.stl saida/A --girar x:90 --mover 7,0,57.5 --final y:90`
+   → `A_base.stl` e `A_novo.stl`. A mediana de distância das faces antigas tem de dar ~0 mm; se não,
+   o alinhamento (girar/mover) está errado.
+2. `scripts/video_remix_blender.py` pelo `trabalho_blender.py` (skill `modelagem-3d`), com `cena.json`
+   (peças, deslocamento, quadros-chave de câmera). Testar 6 quadros em 960×540 antes do lote.
+   Cada plano olha a face onde está a mudança (janela por baixo, recorte na lateral, chanfro na boca).
+3. `scripts/legendas_video.py legendas.json quadros quadros_leg logo.png --mp4 v.mp4 --gif v.gif`:
+   legendas por plano (canto configurável) e cartela com logo e créditos dos autores originais.
+4. Conferir 5 quadros do MP4: legenda não cobre a peça. Apagar os quadros (≈2 GB) depois do aval.
+
 ## Fotos reais tratadas (galeria)
 
 `scripts/trata_fotos.py` (OpenCV): por foto, centro/raio da peça e caixa de corte 4:3.
 Faz: poeira fora da peça (top-hat + inpaint, nunca dentro do círculo da peça), tom (CLAHE leve,
 sombras abertas, tira azulado), foco (escurece o fundo fora da peça), nitidez leve, saída
 1600×1200. **A peça não é retocada.**
+Para pedido de borrar fundo e identidade, usar a receita abaixo, em vez do círculo aproximado.
 Tratamento é opcional. No piloto do suporte, fotos originais de 1200×1600 instaladas foram
 enviadas e persistiram sem recorte; preservavam informações úteis sobre grade e fixação.
+
+## Fundo borrado e nome ocultado — tratamento local aprovado
+
+Receita aprovada visualmente pelo dono em 12/10/2026 na amostra Desk V3 (1280×960).
+A aprovação cobre aquela amostra; cada foto nova exige contorno e inspeção próprios.
+Processar localmente com OpenCV/NumPy já disponíveis. Fotos privadas com nomes ou identidade
+institucional ficam no computador; não encaminhar a geradores de IA ou serviços externos.
+
+1. Abrir o original e trabalhar em cópia. Fixar orientação e resolução **antes** de medir
+   coordenadas. Fazer um recorte ampliado da identificação, ou uma grade de coordenadas
+   privada, para localizar o nome exatamente; não reaproveitar a posição de outra foto.
+2. Desenhar polígonos que preservem a silhueta da montagem, inclusive celular e acessórios
+   úteis. Desfocar todo o restante com GaussianBlur, sigma 18 px; suavizar a máscara com
+   sigma 4 px. Compor `original × máscara + fundo_desfocado × (1 − máscara)`.
+   Preservar também os vazios entre peças: fundo visível através de um vão não é produto.
+3. Para ocultar **somente a identificação autorizada**, delimitar um polígono estreito em
+   perspectiva sobre o nome. Aplicar `cv2.inpaint`, `INPAINT_TELEA`, raio 2 px, e misturar
+   a reconstrução local usando a máscara suavizada com sigma 2 px. Essa exceção de privacidade
+   modifica a inscrição; não corrigir defeitos de impressão, bordas, furos ou geometria.
+4. Salvar JPEG 95 sem EXIF/GPS. Abrir a foto inteira e ampliar a região do nome: confirmar
+   que não há letras legíveis, manchas, halos, pedaços do produto borrados ou fundo nítido
+   esquecido. A máscara suavizada não garante anonimização: se restar letra, ajustar o
+   polígono e inspecionar novamente.
+5. Mostrar uma amostra ao dono quando ele pedir revisão prévia. Após aprovação, aplicar
+   o estilo às demais fotos com coordenadas próprias e conferir o conjunto antes do envio.
+
+Os valores em pixels são ponto de partida para 1280×960; adaptar à resolução e ao resultado.
+O procedimento preserva o contexto da mesa e a nitidez do produto. Não usar desfoque global,
+retângulos grandes atravessando a peça ou mistura fraca que deixe o fundo legível. Não substituir
+fotos reais por imagens geradas.
+
+### Execução reutilizável
+
+Copiar `scripts/desfoca_fundo_nome.py` para a pasta privada de mídia do projeto. Criar um JSON
+por foto com `origem`, `saida` (cópia), `tamanho: [largura, altura]`, `preservar` (lista de
+polígonos) e `ocultar_nome` (lista de polígonos; vazia se não houver nome). Cada polígono é
+uma lista de pares `[x, y]`, medidos a partir do canto superior esquerdo da foto orientada.
+Os caminhos relativos são resolvidos a partir do JSON. Parâmetros opcionais:
+`sigma_fundo: 18`, `sigma_borda: 4`, `raio_nome: 2`, `sigma_nome: 2`.
+
+```powershell
+python "<projeto>/FOTOS_PRIVADAS/desfoca_fundo_nome.py" "<projeto>/FOTOS_PRIVADAS/foto_01.json"
+```
+
+Guardar o JSON junto da cópia tratada para repetir o resultado. Coordenadas, recortes ampliados
+e originais ficam privados; somente as imagens finais aprovadas entram no pacote público.
 
 ## Model Pictures (fundo liso opcional)
 
